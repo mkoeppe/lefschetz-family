@@ -372,4 +372,4 @@ Other directions include:
 
 
 ## Project status
-This project is actively being developped.
+This repository is no longer being updated. For the most up to date version of this package, see ([https://github.com/ericpipha/lefschetz-family](https://github.com/ericpipha/lefschetz-family).
