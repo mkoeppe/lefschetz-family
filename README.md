@@ -1,6 +1,6 @@
 # lefschetz-family
 > [!WARNING]  
-> :warning: *This repository has been migrated to Github!** It will no longer be updated. For the most recent version, please see  ([https://github.com/ericpipha/lefschetz-family](https://github.com/ericpipha/lefschetz-family)). :warning:
+> :warning: **This repository has been migrated to Github!** It will no longer be updated. For the most recent version, please see  ([https://github.com/ericpipha/lefschetz-family](https://github.com/ericpipha/lefschetz-family)). :warning:
 
 ## Description
 This Sage package provides a means of efficiently computing periods of complex projective hypersurfaces and elliptic surfaces over $\mathbb P^1$ with certified rigorous precision bounds.
