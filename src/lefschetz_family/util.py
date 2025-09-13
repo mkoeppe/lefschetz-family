@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import sage.all
+try:
+    import sage.all
+except ImportError:
+    import sage.all__sagemath_modules
 
 from ore_algebra import *
 from sage.rings.complex_mpfr import ComplexField

@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import sage.all
+try:
+    import sage.all
+except ImportError:
+    import sage.all__sagemath_modules
 
 from .numperiods.family import Family
 from .numperiods.integerRelations import IntegerRelations
@@ -40,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 class EllipticSurface(object):
     def __init__(self, P, basepoint=None, fibration=None, **kwds) -> None:
-        """P, a homogeneous polynomial defining an.
+        """P, a homogeneous polynomial defining an elliptic surface.
 
         This class aims at computing an effective basis of the homology group H_n(X), 
         given as lifts of paths through a Lefschetz fibration.
@@ -93,7 +96,7 @@ class EllipticSurface(object):
     def period_matrix(self):
         if not hasattr(self, '_period_matrix'):
             periods_tot = block_matrix([[self.primary_periods, zero_matrix(len(self.holomorphic_forms), len(flatten(self.components_of_singular_fibres))+2)]])
-            self._period_matrix = periods_tot * matrix(self.primary_lattice).transpose().inverse()
+            self._period_matrix = periods_tot * matrix(self.primary_lattice).inverse()
         return self._period_matrix
 
     @property
@@ -200,19 +203,19 @@ class EllipticSurface(object):
     
     @property
     def monodromy_matrices_morsification(self):
-        return self._monodromy_matrices_morsification
+        return self.monodromy_representation.monodromy_matrices_desingularisation
 
     @property
     def fibre(self):
         if not hasattr(self,'_fibre'):
             self._fibre = Hypersurface(self.P(self.basepoint), nbits=self.ctx.nbits, fibration=self._fibration)
-            # if self._fibre.intersection_product == matrix([[0,-1], [1,0]]):
-                # del self._fibre._monodromy_representation
-                # self._fibre.monodromy_representation._extensions_desingularisation = list(reversed(self._fibre.monodromy_representation.extensions_desingularisation))
-                # self._fibre.monodromy_representation._extensions = list(reversed(self._fibre.monodromy_representation.extensions))
-                # del self._fibre._intersection_product
-                # del self._fibre._intersection_product_modification
-            # assert self._fibre.intersection_product == matrix([[0,1], [-1,0]])
+            if self._fibre.intersection_product == matrix([[0,-1], [1,0]]):
+                del self._fibre._monodromy_representation
+                self._fibre.monodromy_representation._extensions_desingularisation = list(reversed(self._fibre.monodromy_representation.extensions_desingularisation))
+                self._fibre.monodromy_representation._extensions = list(reversed(self._fibre.monodromy_representation.extensions))
+                del self._fibre._intersection_product
+                del self._fibre._intersection_product_modification
+            assert self._fibre.intersection_product == matrix([[0,1], [-1,0]])
         return self._fibre
 
     @property
@@ -337,15 +340,15 @@ class EllipticSurface(object):
                 initial_conditions = integration_correction * derivatives_at_basepoint * cohomology_fibre_to_family.inverse() * pM
                 initial_conditions = initial_conditions.submatrix(0,0,transition_matrices[0].ncols())
                 _integrated_thimbles = []
-                for i,ps in enumerate(self.permuting_cycles):
-                    _integrated_thimbles += [(transition_matrices[i]*initial_conditions*p)[0] for p in ps]
+                for i, ps in enumerate(self.permuting_cycles):
+                    _integrated_thimbles += [(transition_matrices[i] * initial_conditions * p)[0] for p in ps]
                 _integrated_thimbles_all += [_integrated_thimbles]
             self._integrated_thimbles = _integrated_thimbles_all
         return self._integrated_thimbles
 
 
     def derivatives_values_at_basepoint(self, w):
-        s=len(self.fibre.extensions)
+        s = len(self.fibre.extensions)
         derivatives = [self.P.parent()(0), w]
         for k in range(s-1):
             derivatives += [self._derivative(derivatives[-1], self.P)] 
@@ -409,8 +412,8 @@ class EllipticSurface(object):
     @property
     def trivial_lattice(self):
         if  not hasattr(self, '_trivial_lattice'):
-            singular_components = flatten(self.singular_components)
-            self._trivial_lattice = [self.lift(v) for v in singular_components] + [self.fibre_class, self.section]
+            components_of_singular_fibres = flatten(self.components_of_singular_fibres)
+            self._trivial_lattice = [self.lift(v) for v in components_of_singular_fibres] + [self.fibre_class, self.section]
         return self._trivial_lattice
     
     @property

@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import sage.all
+try:
+    import sage.all
+except ImportError:
+    import sage.all__sagemath_modules
 
 from sage.rings.rational_field import QQ
 from sage.rings.complex_mpfr import ComplexField
@@ -30,6 +33,8 @@ class FundamentalGroupVoronoi(object):
 
 
     def rationalize(self, z):
+        if z.parent()==QQ:
+            return z
         zcc = self.CC(z)
         zr, zi = zcc.real(), zcc.imag()
         zq = Util.simple_rational(zr, self.prec) + I*Util.simple_rational(zi, self.prec)

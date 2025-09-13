@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import sage.all
+try:
+    import sage.all
+except ImportError:
+    import sage.all__sagemath_modules
 
 from .numperiods.family import Family
 from .numperiods.cohomology import Cohomology
@@ -8,7 +11,6 @@ from .numperiods.integerRelations import IntegerRelations
 from ore_algebra import *
 
 from sage.modules.free_module_element import vector
-from sage.rings.complex_arb import ComplexBallField
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing
 from sage.rings.rational_field import QQ
 from sage.rings.qqbar import AlgebraicField
@@ -48,7 +50,7 @@ logger = logging.getLogger(__name__)
 
 
 class Hypersurface(object):
-    def __init__(self, P, fibration=None, compute_fundamental_group=True, **kwds):
+    def __init__(self, P, basepoint=None, fibration=None, compute_fundamental_group=True, **kwds):
         """P, a homogeneous polynomial defining a smooth hypersurface X in P^{n+1}.
 
         This class aims at computing an effective basis of the homology group H_n(X), 
@@ -66,6 +68,10 @@ class Hypersurface(object):
             self._fibration = fibration
         if self.dim>=1 and not self.ctx.debug:
             fg = self.fundamental_group # this allows reordering the critical points straight away and prevents shenanigans. There should be a better way to do this
+
+        if basepoint!= None: # it is useful to be able to specify the basepoint to avoid being stuck in arithmetic computations if critical values have very large modulus
+            assert basepoint not in self.critical_values, "basepoint is not regular"
+            self._basepoint = basepoint
     
     
     @property
@@ -155,7 +161,7 @@ class Hypersurface(object):
             else:
                 integrated_thimbles_holomorphic = self.integrated_thimbles_holomorphic
                 add = [vector([0]*len(self.monodromy_representation.thimbles))] * len(flatten(self.monodromy_representation.components_of_singular_fibres))
-                add += [vector([0]*len(self.monodromy_representation.thimbles))]*2 if self.dim%2 ==0 else []
+                add += [vector([0]*len(self.monodromy_representation.thimbles))] * 2 if self.dim%2 ==0 else []
                 homology_mat = matrix(self.monodromy_representation.extensions + add).transpose()
                 primary_lattice = self.monodromy_representation.primary_lattice
                 self._holomorphic_period_matrix_modification =  integrated_thimbles_holomorphic * homology_mat * primary_lattice.inverse()
@@ -316,7 +322,7 @@ class Hypersurface(object):
 
     @property
     def vanishing_cycles(self):
-        return self.monodromy_representation.vanishing_cycles
+        return flatten(self.monodromy_representation.vanishing_cycles_desingularisation)
 
     @property
     def extensions(self):
@@ -395,7 +401,7 @@ class Hypersurface(object):
                 short_vectors = [v * others * NS for v in short_vectors]
                 exp_divs = [v+section+fibre for v in short_vectors]
                 chosen=[]
-                expected_number = self.degree-1
+                expected_number = self.degree-1 # this is a temporary workaround
                 while len(exp_divs)!=0:
                     if len([v for v in exp_divs if v * self.intersection_product_modification*exp_divs[0]==0])>0 or len(chosen) == expected_number-1:
                         chosen += [exp_divs[0]]
@@ -514,6 +520,7 @@ class Hypersurface(object):
         if not hasattr(self, '_transition_matrices_holomorphic'):
             if hasattr(self, '_transition_matrices') or self.ctx.simultaneous_integration:
                 r = self.fibre.period_matrix.nrows()
+                r = len(self.fibre.cohomology)
                 R = len(self.cohomology)
                 indices = [self.cohomology.index(w) for w in self.holomorphic_forms]
                 indices += [R+i for i in range(r)]
@@ -625,10 +632,11 @@ class Hypersurface(object):
             s=len(self.fibre.homology)
             transition_matrices = self.transition_matrices
             R=len(self.cohomology)
-            r=len(self.thimbles)
             permuting_cycles = self.permuting_cycles
+
+            cohomology_fibre_to_family = self.family._coordinates([self.family.pol.parent()(w) for w in self.fibre.cohomology], self.basepoint)
+            initial_conditions = cohomology_fibre_to_family.inverse()
             
-            integration_correction = diagonal_matrix([1/ZZ(factorial(k)) for k in range(s if self.dim%2==1 else s+1)])
             pM = self.fibre.period_matrix
             if self.dim%2==1:
                 pM = pM.submatrix(0,0,s-1)
@@ -636,7 +644,7 @@ class Hypersurface(object):
             integrated_thimbles = []
             for tM, pcs in zip(transition_matrices, permuting_cycles):
                 for pc in pcs:
-                    integrated_thimbles += [(tM * expand * pM * pc)[:R]]
+                    integrated_thimbles += [(tM * expand * initial_conditions * pM * pc)[:R]]
             self._integrated_thimbles = matrix(integrated_thimbles).transpose()
         return self._integrated_thimbles
     
@@ -646,10 +654,11 @@ class Hypersurface(object):
             s=len(self.fibre.homology)
             transition_matrices = self.transition_matrices_holomorphic
             R=len(self.holomorphic_forms)
-            r=len(self.thimbles)
             permuting_cycles = self.permuting_cycles
+
+            cohomology_fibre_to_family = self.family._coordinates([self.family.pol.parent()(w) for w in self.fibre.cohomology], self.basepoint)
+            initial_conditions = cohomology_fibre_to_family.inverse()
             
-            integration_correction = diagonal_matrix([1/ZZ(factorial(k)) for k in range(s if self.dim%2==1 else s+1)])
             pM = self.fibre.period_matrix
             if self.dim%2==1:
                 pM = pM.submatrix(0,0,s-1)
@@ -657,7 +666,7 @@ class Hypersurface(object):
             integrated_thimbles = []
             for tM, pcs in zip(transition_matrices, permuting_cycles):
                 for pc in pcs:
-                    integrated_thimbles += [(tM * expand * pM * pc)[:R]]
+                    integrated_thimbles += [(tM * expand * initial_conditions * pM * pc)[:R]]
             self._integrated_thimbles_holomorphic = matrix(integrated_thimbles).transpose()
         return self._integrated_thimbles_holomorphic
     

@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import sage.all
+try:
+    import sage.all
+except ImportError:
+    import sage.all__sagemath_modules
 
 from sage.modules.free_module_element import vector
 from sage.matrix.constructor import matrix
@@ -59,7 +62,7 @@ class MonodromyRepresentation(object):
     @property
     def intersection_product(self):
         if not hasattr(self,'_intersection_product'):
-            self._intersection_product=self._compute_intersection_product()
+            self._intersection_product = self._compute_intersection_product()
         return self._intersection_product
 
     @property
